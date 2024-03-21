@@ -1,0 +1,7 @@
+version: '3'
+services:
+  duckdb:
+    build: ./duckdb
+    volumes:
+      - ./data:/data
+      - ./src:/src
