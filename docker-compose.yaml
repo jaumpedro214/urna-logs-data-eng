@@ -7,5 +7,4 @@ services:
       - ./src:/src
     ports:
       - "8888:8888"
-    environment:
-      - token=1234
+    command: start-notebook.sh --NotebookApp.token='1234'
