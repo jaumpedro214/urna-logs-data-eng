@@ -8,7 +8,7 @@ STATES = [
     "DF", "ES", "GO", "MA", "MG", "MS", 
     "MT", "PA", "PB", "PE", "PI", "PR", 
     "RJ", "RN", "RO", "RR", "RS", "SC", 
-    "SE", "SP", "TO", "ZZ"]
+    "SE", "SP", "TO", "ZZ", "ALL"]
 
 if __name__ == "__main__":
     # get the first sys arg
@@ -21,11 +21,19 @@ if __name__ == "__main__":
 
     tic = time.time()
     cursor = duckdb.connect("")
-    query = f"""
-        SELECT 
-            COUNT(*) 
-        FROM '{uf}.parquet'
-    """
+
+    if uf == "ALL":
+        query = f"""
+            SELECT 
+                COUNT(*) 
+            FROM '*.parquet'
+        """
+    else:
+        query = f"""
+            SELECT 
+                COUNT(*) 
+            FROM '{uf}.parquet'
+        """
     
     cursor.execute(query)
     toc = time.time()

@@ -1,4 +1,4 @@
-FROM python:3.8-slim
+FROM jupyter/minimal-notebook
 
 COPY requirements.txt /app/requirements.txt
 WORKDIR /app
@@ -6,5 +6,5 @@ WORKDIR /app
 RUN pip install -r requirements.txt --upgrade
 WORKDIR /src
 
-# KEEP CONTAINER RUNNING
-CMD ["tail", "-f", "/dev/null"]
+# EXPOSE JUPYTER PORT
+EXPOSE 8888

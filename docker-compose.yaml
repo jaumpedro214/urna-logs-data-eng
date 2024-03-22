@@ -5,3 +5,7 @@ services:
     volumes:
       - ./data:/data
       - ./src:/src
+    ports:
+      - "8888:8888"
+    environment:
+      - token=1234
