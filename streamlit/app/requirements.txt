@@ -1,0 +1,6 @@
+altair
+pandas
+streamlit
+matplotlib
+geopandas
+beautifulsoup4

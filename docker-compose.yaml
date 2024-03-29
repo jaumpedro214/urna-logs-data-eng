@@ -8,3 +8,11 @@ services:
     ports:
       - "8888:8888"
     command: start-notebook.sh --NotebookApp.token='1234'
+  streamlit:
+    build: ./streamlit
+    volumes:
+      - ./src:/src
+      - ./streamlit/app/:/app
+    ports:
+      - "8600:8500"
+    command: streamlit run /src/app.py
