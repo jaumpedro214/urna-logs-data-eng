@@ -1,2 +1,3 @@
 *.parquet
 *.csv
+.tmp
