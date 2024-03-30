@@ -1,5 +1,6 @@
 import streamlit as st
 import geopandas as gpd
+import pandas as pd
 import re
 import io
 
@@ -37,7 +38,7 @@ def get_parameters():
 def get_duckdb_connector():
     return DuckDBConnector.get_instance()
 
-def widget_heatmap_mean_vote_time_map( container, turno, uf, zona, secao ):
+def widget_heatmap_tempo_medio_voto_mapa( container, turno, uf, zona, secao ):
 
     COLORMAP = 'coolwarm_r'
     RANGE_SECONDS_PLOT = 15
@@ -94,7 +95,7 @@ def widget_heatmap_mean_vote_time_map( container, turno, uf, zona, secao ):
         map_gdf_municipios.plot(ax=ax, color='blue', lw=0.1, edgecolor='white')
 
         container.pyplot(fig)
-        container.write(map_gdf_municipios)
+        # container.write(map_gdf_municipios)
 
     elif uf!='ALL' and zona!='ALL' and secao=='ALL':
         pass
@@ -150,6 +151,78 @@ def widget_big_number_tempo_medio_bio( container, turno, uf, zona, secao ):
     container.metric(label='Tempo Médio Biometria', value=tempo_medio_formatado)
 
 
+def widget_qtd_votos_intervalo_tempo( container, turno, uf, zona, secao ):
+
+    metrics_df = get_duckdb_connector().get_vote_time_metrics(uf, turno, zona, secao)
+    if uf == 'ALL':
+        metrics_df = metrics_df.query(f"uf == 'ALL'")
+
+    format_time = lambda x: f"{x // 60}min{x % 60}s" if x >= 60 and x % 60!=0 else f"{x}s" if x < 60 else f"{x // 60}min"
+    extrair_intervalo_superior_segundos = lambda col: int(col.split('_')[-2])
+    extrair_intervalo_inferior_segundos = lambda col: int(col.split('_')[-3])
+
+    colunas_qtd_votos_intervalo = [
+        'votos_0_30_segundos', 'votos_30_60_segundos', 'votos_60_90_segundos',
+        'votos_90_120_segundos', 'votos_120_150_segundos',
+        'votos_150_180_segundos', 'votos_180_210_segundos',
+        'votos_210_300_segundos', 'votos_300_9999_segundos'
+    ]
+
+    # format number in Mi, Mil, and integer 
+    format_number = lambda number : (
+        f"{number//1e6:.0f} Mi" 
+        if number >= 1e6 else f"{number//1e3:.0f} Mil" 
+        if number >= 1e3 else f"{number:.0f}"
+    )
+
+    valores_qtd_votos_intervalo = [
+        (
+         format_time(extrair_intervalo_inferior_segundos(col)) + " - " +
+         format_time(extrair_intervalo_superior_segundos(col)),
+         col, 
+         metrics_df[col].max()
+        )
+        if col != 'votos_300_9999_segundos'
+        else ("+ 5min", col, metrics_df[col].max())
+        for col in colunas_qtd_votos_intervalo
+    ]
+    # revert order
+    valores_qtd_votos_intervalo = valores_qtd_votos_intervalo[::-1]
+
+    df_valores_qtd_votos_intervalo = pd.DataFrame(
+        valores_qtd_votos_intervalo,
+        columns=['intervalo', 'coluna', 'valor']
+    )
+
+    container.markdown('#### Em quanto tempo as pessoas votam?')
+
+    # plot horizontal bar chart
+    fig, ax = plt.subplots( figsize=(5, 15) )
+    df_valores_qtd_votos_intervalo.plot.barh(x='intervalo', y='valor', legend=False, ax=ax)
+    ax.set_xlabel('Quantidade de Votos')
+    ax.set_ylabel('')
+    # ax.set_title('Em quanto tempo as pessoas votam?\n', fontsize=20)
+
+    # remover linha superior, direita e inferior
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    
+    # remove x axis
+    ax.xaxis.set_visible(False)
+
+    # increase y axis font size
+    ax.tick_params(axis='y', labelsize=24)
+
+    # adicionar número no final de cada barra
+    maior_valor = df_valores_qtd_votos_intervalo['valor'].max()
+    offset = 0.05 * maior_valor
+    for i, valor in enumerate(df_valores_qtd_votos_intervalo['valor']):
+        ax.text(valor+offset, i, format_number(valor), color='black', va='center', fontsize=18)
+
+    container.pyplot(fig)
+
+
 def format_time(time_in_seconds):
     days = time_in_seconds // (24 * 3600)
     time_in_seconds = time_in_seconds % (24 * 3600)
@@ -172,7 +245,7 @@ def format_time(time_in_seconds):
     
     return f" {days:d}d {hours:d}h {minutes:d}m {seconds:d}s"
 
-# st.markdown(generate_brazil_map_with_ufs_and_links(), unsafe_allow_html=True)
+
 if __name__ == "__main__":
     st.set_page_config(layout="wide")
 
@@ -193,7 +266,8 @@ if __name__ == "__main__":
     widget_big_number_tempo_medio(col_bignumber_tmedio, turno, uf, zona, secao)
     widget_big_number_tempo_medio_bio(col_bignumber_tmedio_bio, turno, uf, zona, secao)
 
-    col_map, col_histogram, col_temporal_series = st.columns( [.4, .2, .4] )
-    widget_heatmap_mean_vote_time_map(col_map, turno, uf, zona, secao)
+    col_map, col_histogram, col_temporal_series = st.columns( [.3, .2, .5] )
+    widget_heatmap_tempo_medio_voto_mapa(col_map, turno, uf, zona, secao)
+    widget_qtd_votos_intervalo_tempo(col_histogram, turno, uf, zona, secao)
 
     st.divider()
