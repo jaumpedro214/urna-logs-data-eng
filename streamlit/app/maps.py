@@ -28,3 +28,13 @@ def generate_brazil_map_with_ufs_and_links():
     )
 
     return brazil_image_with_links
+
+
+def add_ufs_and_links_to_map(svg_image_buffer):
+    re_uf_map_pattern = r'(<g id="([A-Z][A-Z])">((.|\s)*?)</g>)'
+    image_with_links = re.sub(
+        re_uf_map_pattern, 
+        r"<a target=\"_self\" rel=\"noopener noreferrer\" href=?uf=\2>\1</a>", 
+        svg_image_buffer
+    )
+    return image_with_links
