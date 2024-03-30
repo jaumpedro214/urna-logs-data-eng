@@ -1,6 +1,6 @@
 altair
 pandas
+duckdb
 streamlit
 matplotlib
 geopandas
-beautifulsoup4

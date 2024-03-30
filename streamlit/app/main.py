@@ -3,7 +3,8 @@ import streamlit as st
 from widgets import (
     widget_bignumber_votos, widget_bignumber_secoes, 
     widget_big_number_tempo_medio, widget_big_number_tempo_medio_bio,
-    widget_heatmap_tempo_medio_voto_mapa, widget_qtd_votos_intervalo_tempo
+    widget_heatmap_tempo_medio_voto_mapa, widget_qtd_votos_intervalo_tempo,
+    widgets_metricas_por_hora
 )
 
 UFS = [
@@ -24,7 +25,7 @@ def get_parameters():
     nr_zonas_secoes = [str(x) for x in range(0, 800)]
 
     uf =    select_parameters('uf',    'ALL', UFS            )
-    turno = select_parameters('turno',     1, TURNOS         )
+    turno = select_parameters('turno',   '1', TURNOS         )
     zona =  select_parameters('zona',  'ALL', nr_zonas_secoes)
     secao = select_parameters('secao', 'ALL', nr_zonas_secoes)
     
@@ -57,7 +58,8 @@ if __name__ == "__main__":
     # Heatmap and Histogram Widgets
     # =================================
     col_map, col_histogram, col_temporal_series = st.columns( [.3, .2, .5] )
-    widget_heatmap_tempo_medio_voto_mapa(col_map, turno, uf, zona, secao)
-    widget_qtd_votos_intervalo_tempo(col_histogram, turno, uf, zona, secao)
+    #widget_heatmap_tempo_medio_voto_mapa(col_map, turno, uf, zona, secao)
+    #widget_qtd_votos_intervalo_tempo(col_histogram, turno, uf, zona, secao)
+    widgets_metricas_por_hora(col_temporal_series, turno, uf, zona, secao)
 
     st.divider()

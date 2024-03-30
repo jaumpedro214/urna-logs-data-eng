@@ -1,6 +1,7 @@
 
 import geopandas as gpd
 import pandas as pd
+import datetime
 import re
 import io
 import streamlit as st
@@ -14,6 +15,67 @@ import matplotlib.pyplot as plt
 @st.cache_resource
 def get_duckdb_connector():
     return DuckDBConnector.get_instance()
+
+def widgets_metricas_por_hora(container, turno, uf, zona, secao):
+
+
+    metrics_df = get_duckdb_connector().get_metrics_over_time(uf, turno, zona, secao)
+    metrics_df['timestamp_voto_computado_5min'] = pd.to_datetime(metrics_df['timestamp_voto_computado_5min'])
+    metrics_df['tempo_voto_total_soma_cumulativo'] = metrics_df['tempo_voto_total_soma_cumulativo'].astype(int)
+    metrics_df['tempo_biometria_soma_cumulativo'] = metrics_df['tempo_biometria_soma_cumulativo'].astype(int)
+
+    # metrics_df = metrics_df.sort_values('timestamp_voto_computado_5min')
+    # .fillna(pd.NaT)
+    metrics_df = metrics_df.fillna( pd.NaT )
+
+    # lineplot with time series
+    FIGSIZE = (10, 5)
+    fig, ax = plt.subplots( figsize=FIGSIZE )
+
+    SECONDS_IN_YEAR = 365 * 24 * 3600
+    YEARS = [0, 5, 20, 40, 60, 77, 100, 120] + [150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700]
+    max_timestamp = metrics_df['tempo_voto_total_soma_cumulativo'].max()   
+
+    y_axis_values = [y * SECONDS_IN_YEAR for y in YEARS if y * SECONDS_IN_YEAR <= max_timestamp]
+    y_axis_labels = [format_time(y) for y in y_axis_values]
+
+    # pegar só horas fechadas e 30min
+    x_axis_values = (
+        metrics_df
+        .query("timestamp_voto_computado_5min.dt.minute == 0")
+        ['timestamp_voto_computado_5min']
+    )
+    x_axis_labels = x_axis_values.dt.strftime('%H:%M')
+
+    ax.plot(
+        metrics_df['timestamp_voto_computado_5min'],
+        metrics_df['tempo_voto_total_soma_cumulativo'],
+        label='Tempo Voto Total',
+        color='blue'
+    )
+
+    ax.plot(
+        metrics_df['timestamp_voto_computado_5min'],
+        metrics_df['tempo_biometria_soma_cumulativo'],
+        label='Tempo Biometria',
+        color='red'
+    )
+
+    ax.set_xticks(x_axis_values)
+    ax.set_xticklabels(x_axis_labels, rotation=45, ha='right', fontsize=8)
+
+    ax.set_yticks(y_axis_values)
+    ax.set_yticklabels(y_axis_labels, fontsize=8)
+
+    ax.fill_between(
+        metrics_df['timestamp_voto_computado_5min'],
+        metrics_df['tempo_voto_total_soma_cumulativo'],
+        0,
+        color='gray',
+        alpha=0.5
+    )
+
+    container.pyplot(fig)
 
 
 def widget_heatmap_tempo_medio_voto_mapa( container, turno, uf, zona, secao ):
@@ -203,6 +265,11 @@ def widget_qtd_votos_intervalo_tempo( container, turno, uf, zona, secao ):
 
 
 def format_time(time_in_seconds):
+
+    years = time_in_seconds // (365 * 24 * 3600)
+    time_in_seconds = time_in_seconds % (365 * 24 * 3600)
+    months = time_in_seconds // (30 * 24 * 3600)
+    time_in_seconds = time_in_seconds % (30 * 24 * 3600)
     days = time_in_seconds // (24 * 3600)
     time_in_seconds = time_in_seconds % (24 * 3600)
     hours = time_in_seconds // 3600
@@ -215,11 +282,18 @@ def format_time(time_in_seconds):
     minutes = int(minutes)
     seconds = int(seconds)
 
-    if days == 0 and hours != 0:
-        return f" {hours:d}h {minutes:d}m {seconds:d}s"
-    if days == 0 and hours == 0 and minutes != 0:
-        return f" {minutes:d}m {seconds:d}s"
-    if days == 0 and hours == 0 and minutes == 0:
-        return f" {seconds:d}s"
-    
-    return f" {days:d}d {hours:d}h {minutes:d}m {seconds:d}s"
+    time_formated = ""
+    if seconds > 0:
+        time_formated += f"{seconds:.0f}s"
+    if minutes > 0:
+        time_formated = f"{minutes:.0f}m " + time_formated
+    if hours > 0:
+        time_formated = f"{hours:.0f}h " + time_formated
+    if days > 0:
+        time_formated = f"{days:.0f}d " + time_formated
+    if months > 0:
+        time_formated = f"{months:.0f} Meses " + time_formated
+    if years > 0:
+        time_formated = f"{years:.0f} Anos " + time_formated
+
+    return time_formated
