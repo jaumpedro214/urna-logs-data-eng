@@ -4,7 +4,7 @@ import re
 import streamlit as st  
 
 @st.cache_data()
-def load_brazil_map():
+def load_brazil_simplified_map():
     map_ufs = './maps/BR_UF_2022.zip'
 
     gdf = gpd.read_file(map_ufs)
@@ -13,20 +13,10 @@ def load_brazil_map():
     # and improve performance on streamlit app
     gdf['geometry'] = gdf['geometry'].simplify(tolerance=0.01)
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ufs = gdf.SIGLA_UF
-
-    for uf in ufs:
-        gdf[gdf.SIGLA_UF == uf].plot(ax=ax, gid=uf)
-
-    # remove axis
-    plt.axis('off')
-    # save as svg
-    fig.savefig('brasil_simplify.svg')
+    return gdf
 
 def generate_brazil_map_with_ufs_and_links():
-    load_brazil_map()
+    load_brazil_simplified_map()
 
     brazil_image = open('brasil_simplify.svg', 'r').read()
 
