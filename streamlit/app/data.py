@@ -44,7 +44,7 @@ class DuckDBConnector:
                 "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
                 "SP", "SE", "TO", "ZZ", "ALL"
             ])
-
+            
         query = f"""
             SELECT *
             FROM {table}
