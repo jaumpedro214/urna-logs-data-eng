@@ -36,7 +36,7 @@ if __name__ == "__main__":
 
     uf, turno, zona, secao = get_parameters()
     
-    st.title(f'Tempo de Votação')
+    st.title(f'Eleições em Números - Tempo de Votação')
     subtitulo = f'## {turno}º Turno'
     subtitulo = subtitulo + f' - {uf}' if uf != 'ALL' else subtitulo
     subtitulo = subtitulo + f' - Zona {zona}' if zona != 'ALL' else subtitulo
@@ -58,8 +58,8 @@ if __name__ == "__main__":
     # Heatmap and Histogram Widgets
     # =================================
     col_map, col_histogram, col_temporal_series = st.columns( [.3, .2, .5] )
-    #widget_heatmap_tempo_medio_voto_mapa(col_map, turno, uf, zona, secao)
-    #widget_qtd_votos_intervalo_tempo(col_histogram, turno, uf, zona, secao)
+    widget_heatmap_tempo_medio_voto_mapa(col_map, turno, uf, zona, secao)
+    widget_qtd_votos_intervalo_tempo(col_histogram, turno, uf, zona, secao)
     widgets_metricas_por_hora(col_temporal_series, turno, uf, zona, secao)
 
     st.divider()

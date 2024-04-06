@@ -26,12 +26,20 @@ def widgets_metricas_por_hora(container, turno, uf, zona, secao):
     metrics_df = metrics_df.sort_values('timestamp_voto_computado_5min')
     y_metric = metrics_df['total_votos'].astype(int)
 
-    x_value_max_y, max_y = metrics_df.loc[metrics_df['total_votos'].idxmax(), ['timestamp_voto_computado_5min', 'total_votos']]
+    x_value_max_y, max_y = metrics_df.loc[y_metric.idxmax(), ['timestamp_voto_computado_5min', 'total_votos']]
+
+
     x_value_max_y = x_value_max_y.strftime('%H:%M')
     max_y_mi = max_y//1e6
-    max_y_mil = (max_y - max_y_mi*1e6) // 1e3
+    max_y_mil = (max_y - max_y_mi*1e6) / 1e3
     max_y_formatado = f"{max_y_mi:.0f} Mihão" if max_y_mi > 0 else ''
-    max_y_formatado += f" {max_y_mil:.0f} Mil" if max_y_mil > 0 else ''
+    if max_y_mil > 0 and max_y_mi > 0:
+        max_y_formatado += f" {max_y_mil:.0f} Mil"
+    elif max_y_mil > 0:
+        max_y_formatado = str(max_y_mil).replace('.', ',')
+        # manter somente 1 casa decimal
+        max_y_formatado = max_y_formatado[:max_y_formatado.index(',')+2] + ' Mil'
+
     max_y_formatado = max_y_formatado.strip()
 
     metrics_df = metrics_df.fillna( pd.NaT )
@@ -97,7 +105,7 @@ def widgets_metricas_por_hora(container, turno, uf, zona, secao):
 
 def widget_heatmap_tempo_medio_voto_mapa( container, turno, uf, zona, secao ):
 
-    COLORMAP = 'coolwarm_r'
+    COLORMAP = 'coolwarm'
     RANGE_SECONDS_PLOT = 15
     FIGSIZE = (6, 6)
 
@@ -113,7 +121,7 @@ def widget_heatmap_tempo_medio_voto_mapa( container, turno, uf, zona, secao ):
         map_gdf = gpd.GeoDataFrame(map_gdf)
 
         tempo_voto_medio_ALL = metrics_df.query(f"uf == 'ALL'")['tempo_voto_medio'].max()
-        map_gdf['tempo_voto_medio'] = tempo_voto_medio_ALL - map_gdf['tempo_voto_medio']
+        map_gdf['tempo_voto_medio'] = map_gdf['tempo_voto_medio'] - tempo_voto_medio_ALL
         
         fig = plt.figure(figsize=FIGSIZE)
         ax = fig.add_subplot(1, 1, 1)
@@ -134,6 +142,16 @@ def widget_heatmap_tempo_medio_voto_mapa( container, turno, uf, zona, secao ):
                     gid=uf
                 )
             )
+
+        # add a horizontal colorbar
+        sm = plt.cm.ScalarMappable(
+            cmap=COLORMAP,
+            norm=plt.Normalize(vmin=-RANGE_SECONDS_PLOT, vmax=+RANGE_SECONDS_PLOT)
+        )
+
+        cbar = fig.colorbar(sm, ax=ax, orientation='horizontal', pad=0.01, aspect=20, fraction=0.035)
+        cbar.set_label('Segundos abaixo/acima da média', fontsize=10)
+        cbar.ax.tick_params(labelsize=8)
         
         # save svg image to buffer
         svg_image_buffer = io.StringIO()
