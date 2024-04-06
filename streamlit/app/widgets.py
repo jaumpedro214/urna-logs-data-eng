@@ -26,6 +26,14 @@ def widgets_metricas_por_hora(container, turno, uf, zona, secao):
     metrics_df = metrics_df.sort_values('timestamp_voto_computado_5min')
     y_metric = metrics_df['total_votos'].astype(int)
 
+    x_value_max_y, max_y = metrics_df.loc[metrics_df['total_votos'].idxmax(), ['timestamp_voto_computado_5min', 'total_votos']]
+    x_value_max_y = x_value_max_y.strftime('%H:%M')
+    max_y_mi = max_y//1e6
+    max_y_mil = (max_y - max_y_mi*1e6) // 1e3
+    max_y_formatado = f"{max_y_mi:.0f} Mihão" if max_y_mi > 0 else ''
+    max_y_formatado += f" {max_y_mil:.0f} Mil" if max_y_mil > 0 else ''
+    max_y_formatado = max_y_formatado.strip()
+
     metrics_df = metrics_df.fillna( pd.NaT )
 
     # lineplot with time series
@@ -40,7 +48,6 @@ def widgets_metricas_por_hora(container, turno, uf, zona, secao):
     )
     x_axis_labels = x_axis_values.dt.strftime('%H:%M')
 
-
     # format number in mi, mil, and integer
     format_number = lambda number : (
         f"{number//1e6:.0f} Mi" 
@@ -48,7 +55,7 @@ def widgets_metricas_por_hora(container, turno, uf, zona, secao):
         if number >= 1e3 else f"{number:.0f}"
     )
     if uf in ['ALL', 'SP', 'MG']:
-        y_axis_values = [ 1e4, 5e4, 1e5, 2.5e5, 5e5, 7.5e5, 1e6 ]
+        y_axis_values = [ 5e4, 1e5, 2.5e5, 5e5, 7.5e5, 1e6 ]
     else:
         y_axis_values = [ 1e3, 3e3, 5e3, 1e4, 1.5e4, 2e4, 5e4, 1e5, 5e5 ]
     y_axis_labels = [format_number(y) for y in y_axis_values]
@@ -61,13 +68,19 @@ def widgets_metricas_por_hora(container, turno, uf, zona, secao):
     )
 
     ax.set_xticks(x_axis_values)
-    ax.set_xticklabels(x_axis_labels, rotation=45, ha='right', fontsize=8)
+    ax.set_xticklabels(x_axis_labels, rotation=45, ha='right', fontsize=10)
+
+    # remove right and top spines
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['top'].set_visible(False)
 
     ax.set_yticks(y_axis_values)
-    ax.set_yticklabels(y_axis_labels, fontsize=8)
+    ax.set_yticklabels(y_axis_labels, fontsize=10)
     # add horizontal grid lines on the y axis
     # in the background
-    ax.yaxis.grid(True, linestyle='--', alpha=0.5)
+    ax.yaxis.grid(True, linestyle='-', alpha=1)
 
     ax.fill_between(
         metrics_df['timestamp_voto_computado_5min'],
@@ -78,7 +91,8 @@ def widgets_metricas_por_hora(container, turno, uf, zona, secao):
     )
     
     container.markdown('#### Número de votos efetuados a cada 5min')
-    container.pyplot(fig) 
+    container.pyplot(fig)
+    container.markdown(f'#### Às {x_value_max_y}, houve o pico de votos, com **{max_y_formatado}** computados em 5 minutos!')
 
 
 def widget_heatmap_tempo_medio_voto_mapa( container, turno, uf, zona, secao ):
