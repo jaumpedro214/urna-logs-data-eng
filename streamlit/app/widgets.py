@@ -8,36 +8,29 @@ import streamlit as st
 
 from maps import add_ufs_and_links_to_map, load_brazil_simplified_map, load_ufs_city_simplified_map
 from data import DuckDBConnector
+import numpy as np
 
 import matplotlib.pyplot as plt
-
+from matplotlib.colors import LinearSegmentedColormap
 
 @st.cache_resource
 def get_duckdb_connector():
     return DuckDBConnector.get_instance()
 
+
 def widgets_metricas_por_hora(container, turno, uf, zona, secao):
-
-
+    
     metrics_df = get_duckdb_connector().get_metrics_over_time(uf, turno, zona, secao)
     metrics_df['timestamp_voto_computado_5min'] = pd.to_datetime(metrics_df['timestamp_voto_computado_5min'])
-    metrics_df['tempo_voto_total_soma_cumulativo'] = metrics_df['tempo_voto_total_soma_cumulativo'].astype(int)
-    metrics_df['tempo_biometria_soma_cumulativo'] = metrics_df['tempo_biometria_soma_cumulativo'].astype(int)
+    # sort by timestamp
+    metrics_df = metrics_df.sort_values('timestamp_voto_computado_5min')
+    y_metric = metrics_df['total_votos'].astype(int)
 
-    # metrics_df = metrics_df.sort_values('timestamp_voto_computado_5min')
-    # .fillna(pd.NaT)
     metrics_df = metrics_df.fillna( pd.NaT )
 
     # lineplot with time series
     FIGSIZE = (10, 5)
     fig, ax = plt.subplots( figsize=FIGSIZE )
-
-    SECONDS_IN_YEAR = 365 * 24 * 3600
-    YEARS = [0, 5, 20, 40, 60, 77, 100, 120] + [150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700]
-    max_timestamp = metrics_df['tempo_voto_total_soma_cumulativo'].max()   
-
-    y_axis_values = [y * SECONDS_IN_YEAR for y in YEARS if y * SECONDS_IN_YEAR <= max_timestamp]
-    y_axis_labels = [format_time(y) for y in y_axis_values]
 
     # pegar só horas fechadas e 30min
     x_axis_values = (
@@ -47,18 +40,24 @@ def widgets_metricas_por_hora(container, turno, uf, zona, secao):
     )
     x_axis_labels = x_axis_values.dt.strftime('%H:%M')
 
-    ax.plot(
-        metrics_df['timestamp_voto_computado_5min'],
-        metrics_df['tempo_voto_total_soma_cumulativo'],
-        label='Tempo Voto Total',
-        color='blue'
+
+    # format number in mi, mil, and integer
+    format_number = lambda number : (
+        f"{number//1e6:.0f} Mi" 
+        if number >= 1e6 else f"{number//1e3:.0f} Mil" 
+        if number >= 1e3 else f"{number:.0f}"
     )
+    if uf in ['ALL', 'SP', 'MG']:
+        y_axis_values = [ 1e4, 5e4, 1e5, 2.5e5, 5e5, 7.5e5, 1e6 ]
+    else:
+        y_axis_values = [ 1e3, 3e3, 5e3, 1e4, 1.5e4, 2e4, 5e4, 1e5, 5e5 ]
+    y_axis_labels = [format_number(y) for y in y_axis_values]
 
     ax.plot(
         metrics_df['timestamp_voto_computado_5min'],
-        metrics_df['tempo_biometria_soma_cumulativo'],
-        label='Tempo Biometria',
-        color='red'
+        y_metric,
+        label='Tempo Voto Total',
+        color='blue'
     )
 
     ax.set_xticks(x_axis_values)
@@ -66,16 +65,20 @@ def widgets_metricas_por_hora(container, turno, uf, zona, secao):
 
     ax.set_yticks(y_axis_values)
     ax.set_yticklabels(y_axis_labels, fontsize=8)
+    # add horizontal grid lines on the y axis
+    # in the background
+    ax.yaxis.grid(True, linestyle='--', alpha=0.5)
 
     ax.fill_between(
         metrics_df['timestamp_voto_computado_5min'],
-        metrics_df['tempo_voto_total_soma_cumulativo'],
+        y_metric,
         0,
-        color='gray',
+        zorder=0,
         alpha=0.5
     )
-
-    container.pyplot(fig)
+    
+    container.markdown('#### Número de votos efetuados a cada 5min')
+    container.pyplot(fig) 
 
 
 def widget_heatmap_tempo_medio_voto_mapa( container, turno, uf, zona, secao ):
@@ -293,7 +296,11 @@ def format_time(time_in_seconds):
         time_formated = f"{days:.0f}d " + time_formated
     if months > 0:
         time_formated = f"{months:.0f} Meses " + time_formated
+        if months == 1:
+            time_formated = time_formated.replace('Meses', 'Mês')
     if years > 0:
         time_formated = f"{years:.0f} Anos " + time_formated
+        if years == 1:
+            time_formated = time_formated.replace('Anos', 'Ano')
 
     return time_formated
