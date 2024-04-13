@@ -19,14 +19,13 @@ def get_duckdb_connector():
     return DuckDBConnector.get_instance()
 
 BLUE = "#0B1D51"
-RED  = "#E3655B"
+RED  = "#F08902"
 
 # Seaborn set theme
 # no grid
 # gray background
 sns.set_style("whitegrid")
 sns.set_theme(style='whitegrid', palette='deep', font='sans-serif', font_scale=1, color_codes=True, rc=None)
-
 
 def widgets_metricas_por_hora(container, turno, uf, zona, secao):
     
@@ -102,6 +101,10 @@ def widgets_metricas_por_hora(container, turno, uf, zona, secao):
     ax.yaxis.grid(True, linestyle='-', alpha=1)
     # remove x grid lines
     ax.xaxis.grid(False)
+    # remove x and y labels
+    ax.set_xlabel('')
+    ax.set_ylabel('')
+
     # add xticks marks
     ax.fill_between(
         metrics_df['timestamp_voto_computado_5min'],
@@ -301,6 +304,22 @@ def widget_qtd_votos_intervalo_tempo( container, turno, uf, zona, secao ):
         ax=ax
     )
     fig.gca().invert_yaxis()
+
+    # make the biggest bar red
+    max_value = df_valores_qtd_votos_intervalo['valor'].max()
+    max_value_index = df_valores_qtd_votos_intervalo['valor'].idxmax()
+    ax.patches[max_value_index].set_facecolor(RED)
+    # add the % inside the biggest bar
+    max_value_percent = max_value / df_valores_qtd_votos_intervalo['valor'].sum()
+    ax.text(
+        max_value - 0.05 * max_value, 
+        max_value_index, 
+        f"{max_value_percent:.1%}",
+        color='white', 
+        ha = 'right', 
+        va = 'center',
+        size=20
+    )
 
     ax.set_xlabel('Quantidade de Votos')
     ax.set_ylabel('')

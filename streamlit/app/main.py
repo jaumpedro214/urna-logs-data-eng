@@ -53,6 +53,7 @@ if __name__ == "__main__":
     widget_bignumber_secoes(col_bignumber_secoes, turno, uf, zona, secao)
     widget_big_number_tempo_medio(col_bignumber_tmedio, turno, uf, zona, secao)
     widget_big_number_tempo_medio_bio(col_bignumber_tmedio_bio, turno, uf, zona, secao)
+    st.divider()
 
     # =================================
     # Heatmap and Histogram Widgets
