@@ -5,6 +5,7 @@ import datetime
 import re
 import io
 import streamlit as st
+import seaborn as sns
 
 from maps import add_ufs_and_links_to_map, load_brazil_simplified_map, load_ufs_city_simplified_map
 from data import DuckDBConnector
@@ -16,6 +17,15 @@ from matplotlib.colors import LinearSegmentedColormap
 @st.cache_resource
 def get_duckdb_connector():
     return DuckDBConnector.get_instance()
+
+BLUE = "#0B1D51"
+RED  = "#E3655B"
+
+# Seaborn set theme
+# no grid
+# gray background
+sns.set_style("whitegrid")
+sns.set_theme(style='whitegrid', palette='deep', font='sans-serif', font_scale=1, color_codes=True, rc=None)
 
 
 def widgets_metricas_por_hora(container, turno, uf, zona, secao):
@@ -68,11 +78,12 @@ def widgets_metricas_por_hora(container, turno, uf, zona, secao):
         y_axis_values = [ 1e3, 3e3, 5e3, 1e4, 1.5e4, 2e4, 5e4, 1e5, 5e5 ]
     y_axis_labels = [format_number(y) for y in y_axis_values]
 
-    ax.plot(
-        metrics_df['timestamp_voto_computado_5min'],
-        y_metric,
-        label='Tempo Voto Total',
-        color='blue'
+
+    sns.lineplot(
+        x=metrics_df['timestamp_voto_computado_5min'],
+        y=y_metric,
+        ax=ax,
+        color=BLUE
     )
 
     ax.set_xticks(x_axis_values)
@@ -89,13 +100,16 @@ def widgets_metricas_por_hora(container, turno, uf, zona, secao):
     # add horizontal grid lines on the y axis
     # in the background
     ax.yaxis.grid(True, linestyle='-', alpha=1)
-
+    # remove x grid lines
+    ax.xaxis.grid(False)
+    # add xticks marks
     ax.fill_between(
         metrics_df['timestamp_voto_computado_5min'],
         y_metric,
         0,
         zorder=0,
-        alpha=0.5
+        alpha=0.5,
+        color=BLUE
     )
     
     container.markdown('#### Número de votos efetuados a cada 5min')
@@ -103,13 +117,11 @@ def widgets_metricas_por_hora(container, turno, uf, zona, secao):
     container.markdown(f'#### Às {x_value_max_y}, houve o pico de votos, com **{max_y_formatado}** computados em 5 minutos!')
 
 
-def widget_heatmap_tempo_medio_voto_mapa( container, turno, uf, zona, secao ):
+def widget_heatmap_tempo_medio_voto_mapa( container, turno, uf, zona, secao ): 
 
     COLORMAP = 'coolwarm'
     RANGE_SECONDS_PLOT = 15
     FIGSIZE = (6, 6)
-
-    container.markdown('#### Tempo Médio de Votação por UF')
     
     map_gdf = load_brazil_simplified_map()
     map_gdf_municipios = load_ufs_city_simplified_map()
@@ -159,6 +171,8 @@ def widget_heatmap_tempo_medio_voto_mapa( container, turno, uf, zona, secao ):
         plt.close(fig)
 
         svg_image_with_links = add_ufs_and_links_to_map(svg_image_buffer.getvalue())
+
+        container.markdown('#### Tempo Médio de Votação por UF')
         container.markdown(svg_image_with_links, unsafe_allow_html=True)
 
     elif uf!='ALL' and zona=='ALL' and secao=='ALL':
@@ -233,7 +247,14 @@ def widget_qtd_votos_intervalo_tempo( container, turno, uf, zona, secao ):
     if uf == 'ALL':
         metrics_df = metrics_df.query(f"uf == 'ALL'")
 
-    format_time = lambda x: f"{x // 60}min{x % 60}s" if x >= 60 and x % 60!=0 else f"{x}s" if x < 60 else f"{x // 60}min"
+    format_time = lambda x: f"{x // 60}:{x % 60:02d}"
+    # format number in Mi, Mil, and integer 
+    format_number = lambda number : (
+        f"{number//1e6:.0f} Mi" 
+        if number >= 1e6 else f"{number//1e3:.0f} Mil" 
+        if number >= 1e3 else f"{number:.0f}"
+    )
+
     extrair_intervalo_superior_segundos = lambda col: int(col.split('_')[-2])
     extrair_intervalo_inferior_segundos = lambda col: int(col.split('_')[-3])
 
@@ -244,22 +265,17 @@ def widget_qtd_votos_intervalo_tempo( container, turno, uf, zona, secao ):
         'votos_210_300_segundos', 'votos_300_9999_segundos'
     ]
 
-    # format number in Mi, Mil, and integer 
-    format_number = lambda number : (
-        f"{number//1e6:.0f} Mi" 
-        if number >= 1e6 else f"{number//1e3:.0f} Mil" 
-        if number >= 1e3 else f"{number:.0f}"
-    )
-
     valores_qtd_votos_intervalo = [
         (
-         format_time(extrair_intervalo_inferior_segundos(col)) + " - " +
+         format_time(extrair_intervalo_inferior_segundos(col)) + " a " +
          format_time(extrair_intervalo_superior_segundos(col)),
          col, 
          metrics_df[col].max()
         )
-        if col != 'votos_300_9999_segundos'
-        else ("+ 5min", col, metrics_df[col].max())
+        if col != 'votos_300_9999_segundos' and col != 'votos_0_30_segundos'
+        else ("mais de 5:00", col, metrics_df[col].max())
+        if col == 'votos_300_9999_segundos'
+        else ("até 0:30", col, metrics_df[col].max())
         for col in colunas_qtd_votos_intervalo
     ]
     # revert order
@@ -270,11 +286,22 @@ def widget_qtd_votos_intervalo_tempo( container, turno, uf, zona, secao ):
         columns=['intervalo', 'coluna', 'valor']
     )
 
-    container.markdown('#### Em quanto tempo as pessoas votam?')
+    container.markdown('#### Em quantos minutos as pessoas votam?')
 
     # plot horizontal bar chart
-    fig, ax = plt.subplots( figsize=(5, 15) )
-    df_valores_qtd_votos_intervalo.plot.barh(x='intervalo', y='valor', legend=False, ax=ax)
+    fig, ax = plt.subplots( figsize=(5, 12) )
+    # df_valores_qtd_votos_intervalo.plot.barh(x='intervalo', y='valor', legend=False, width=.8, ax=ax)
+
+    # make the barplot with seaborn
+    sns.barplot(
+        x='valor', 
+        y='intervalo', 
+        data=df_valores_qtd_votos_intervalo, 
+        color=BLUE,
+        ax=ax
+    )
+    fig.gca().invert_yaxis()
+
     ax.set_xlabel('Quantidade de Votos')
     ax.set_ylabel('')
     # ax.set_title('Em quanto tempo as pessoas votam?\n', fontsize=20)
@@ -288,7 +315,7 @@ def widget_qtd_votos_intervalo_tempo( container, turno, uf, zona, secao ):
     ax.xaxis.set_visible(False)
 
     # increase y axis font size
-    ax.tick_params(axis='y', labelsize=24)
+    ax.tick_params(axis='y', labelsize=20)
 
     # adicionar número no final de cada barra
     maior_valor = df_valores_qtd_votos_intervalo['valor'].max()

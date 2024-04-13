@@ -4,3 +4,4 @@ duckdb
 streamlit
 matplotlib
 geopandas
+seaborn
