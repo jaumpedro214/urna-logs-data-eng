@@ -50,7 +50,7 @@ class DuckDBConnector:
             uf = "','".join(UFS)
         elif zone == 'ALL':
             zone = "','".join(ZONE_GROUPS)
-            zone_filter = f"AND zone_group in ('{zone}')"
+            zone_filter = f"AND zone_group in ('{zone}', 'ALL')"
             
         query = f"""
             SELECT *

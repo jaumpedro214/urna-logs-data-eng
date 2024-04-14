@@ -209,6 +209,13 @@ def widget_tabela_tempo_medio_zonas( container, turno, uf, zona, secao ):
 
     map_gdf = load_brazil_simplified_map()
     map_gdf = map_gdf.query(f"SIGLA_UF == '{uf}'")
+    metrics_df = get_duckdb_connector().get_vote_time_metrics(uf, turno, zona, secao)
+    metrics_df = metrics_df[ ['zone_group', 'zone_code', 'total_votos', 'tempo_voto_medio'] ]
+    metrics_df_all_zones = metrics_df.query("zone_code == 'ALL'")
+    metrics_df = metrics_df.query("zone_code != 'ALL'")
+
+    unique_zone_groups = list(metrics_df['zone_group'].unique())
+    unique_zone_groups.sort( key=lambda x: int(x.split('-')[0]) )
 
     # plot a small map with the selected UF
     fig, ax = plt.subplots( figsize=(1, 1) )
@@ -219,21 +226,60 @@ def widget_tabela_tempo_medio_zonas( container, turno, uf, zona, secao ):
         map_gdf.centroid.x.values[0],
         map_gdf.centroid.y.values[0],
         uf,
-        fontsize=12,
+        fontsize=8,
         weight='bold',
         ha='center',
         va='center',
         color='white'
     )
 
-    container.pyplot(fig, use_container_width=False)
+    x=.15
+    col_map_uf, col_title = container.columns( [x, 1-x] )
+    col_map_uf.pyplot(fig, use_container_width=True)
+    col_title.markdown(f"### Detalhamento por Zona \n")
+    
+    zone_gorup_tabs = container.tabs( unique_zone_groups )
+    for zone_group, zone_group_tab in zip(unique_zone_groups, zone_gorup_tabs):
 
-    metrics_df = get_duckdb_connector().get_vote_time_metrics(uf, turno, zona, secao)
-    metrics_df = metrics_df[ ['zone_code', 'total_votos', 'tempo_voto_medio'] ]
+        metrics_df_zone_group = metrics_df.query(f"zone_group == '{zone_group}'")
+        top_3_most_last_zones = metrics_df_zone_group.sort_values('tempo_voto_medio', ascending=False).head(3)['zone_code'].values
 
+        metrics_df_zone_group = metrics_df_zone_group.sort_values('zone_code')
+        metrics_df_zone_group['tempo_voto_medio'] = metrics_df_zone_group['tempo_voto_medio'].apply(format_time)
+        metrics_df_zone_group['total_votos'] = metrics_df_zone_group['total_votos'].apply(format_number)
 
-    container.markdown('#### Tempo Médio de Votação por Zona')
-    container.dataframe(metrics_df)
+        # add medals to the top 3 most last zones
+        # in the tempo_voto_medio column
+
+        for medal, zone in zip(['🥇', '🥈', '🥉'], top_3_most_last_zones):
+            metrics_df_zone_group.loc[metrics_df_zone_group['zone_code'] == zone, 'tempo_voto_medio'] = medal \
+            + ' ' + metrics_df_zone_group.loc[metrics_df_zone_group['zone_code'] == zone, 'tempo_voto_medio']
+            
+        
+        metrics_df_zone_group = metrics_df_zone_group.rename(
+            columns={
+                'zone_code': 'Zona',
+                'total_votos': 'Votos',
+                'tempo_voto_medio': 'Tempo Médio'
+            }
+        ).drop(columns='zone_group')
+
+        zone_group_tab.dataframe(
+            metrics_df_zone_group
+            .style
+            .apply(
+                lambda x: 
+                    [
+                        f'background-color: {RED}; color: white; font-weight: bold; font-size: 15px'
+                        if x['Zona'] in top_3_most_last_zones else '',
+                    ]*len(x),
+                axis=1
+            ),
+            height=400, 
+            use_container_width = True,
+            hide_index=True
+        )
+
 
 def widget_heatmap_tempo_medio_voto_mapa( container, turno, uf, zona, secao ):
     COLORMAP = 'coolwarm'
