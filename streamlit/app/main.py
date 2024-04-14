@@ -39,7 +39,7 @@ if __name__ == "__main__":
     
     st.title(f'Eleições em Números - Tempo de Votação')
     subtitulo = ''
-    subtitulo = subtitulo + f' - {uf}' if uf != 'ALL' else subtitulo
+    subtitulo = subtitulo + f' - {uf}' if uf != 'ALL' else subtitulo + " - Brasil"
     subtitulo = subtitulo + f' - Zona {zona}' if zona != 'ALL' else subtitulo
     subtitulo = subtitulo + f', Seção {secao}' if secao != 'ALL' else subtitulo
 
@@ -97,3 +97,10 @@ if __name__ == "__main__":
     widget_numero_votos_intervalo_5min(col_temporal_series, turno, uf, zona, secao)
 
     st.divider()
+
+    # =================================
+    # Foot note. Author: João Pedro. Data gathered from TSE Open Data Portal. All code available at github.
+    # =================================
+
+    st.text('Author: João Pedro. Dados coletados do Portal de Dados Abertos do TSE. All code available at Github.')
+    st.text('O projeto é complexo. Os podem não ser 100% precisos.')
