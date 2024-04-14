@@ -3,8 +3,9 @@ import streamlit as st
 from widgets import (
     widget_bignumber_votos, widget_bignumber_secoes, 
     widget_big_number_tempo_medio, widget_big_number_tempo_medio_bio,
-    widget_heatmap_tempo_medio_voto_mapa, widget_qtd_votos_intervalo_tempo,
-    widgets_metricas_por_hora
+    widget_big_number_tempo_total_voto,
+    widget_tempo_medio_voto, widget_qtd_votos_intervalo_tempo,
+    widget_numero_votos_intervalo_5min
 )
 
 UFS = [
@@ -48,19 +49,20 @@ if __name__ == "__main__":
     # Big Number Widgets
     # ============================
 
-    col_bignumber_votos, col_bignumber_secoes, col_bignumber_tmedio, col_bignumber_tmedio_bio = st.columns(4)
+    col_bignumber_votos, col_bignumber_secoes, col_bignumber_tmedio, col_bignumber_tmedio_bio, col_bignumber_tempo_total = st.columns(5)
     widget_bignumber_votos(col_bignumber_votos, turno, uf, zona, secao)
     widget_bignumber_secoes(col_bignumber_secoes, turno, uf, zona, secao)
     widget_big_number_tempo_medio(col_bignumber_tmedio, turno, uf, zona, secao)
     widget_big_number_tempo_medio_bio(col_bignumber_tmedio_bio, turno, uf, zona, secao)
+    widget_big_number_tempo_total_voto(col_bignumber_tempo_total, turno, uf, zona, secao)
     st.divider()
 
     # =================================
     # Heatmap and Histogram Widgets
     # =================================
     col_map, col_histogram, col_temporal_series = st.columns( [.3, .2, .5] )
-    widget_heatmap_tempo_medio_voto_mapa(col_map, turno, uf, zona, secao)
+    widget_tempo_medio_voto(col_map, turno, uf, zona, secao)
     widget_qtd_votos_intervalo_tempo(col_histogram, turno, uf, zona, secao)
-    widgets_metricas_por_hora(col_temporal_series, turno, uf, zona, secao)
+    widget_numero_votos_intervalo_5min(col_temporal_series, turno, uf, zona, secao)
 
     st.divider()

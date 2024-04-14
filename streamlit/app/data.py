@@ -1,5 +1,12 @@
 import duckdb
 
+ZONE_GROUPS = [ f'{x}-{x+20}' for x in range(0, 800, 20) ]
+UFS = [
+    "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
+    "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
+    "SP", "SE", "TO", "ZZ", "ALL"
+]
+
 class DuckDBConnector:
     # Connect to the database
     # singleton pattern
@@ -38,12 +45,12 @@ class DuckDBConnector:
         zone = F"{int(zone):04d}" if zone != 'ALL' else zone
         section = F"{int(section):04d}" if section != 'ALL' else section
 
+        zone_filter = f"AND zone_code = '{zone}' AND zone_group = '{zone_group}'"
         if uf == 'ALL':
-            uf = "','".join([
-                "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS",
-                "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC",
-                "SP", "SE", "TO", "ZZ", "ALL"
-            ])
+            uf = "','".join(UFS)
+        elif zone == 'ALL':
+            zone = "','".join(ZONE_GROUPS)
+            zone_filter = f"AND zone_group in ('{zone}')"
             
         query = f"""
             SELECT *
@@ -51,8 +58,7 @@ class DuckDBConnector:
             WHERE 1=1
             AND turno = '{turno}'
             AND uf in ('{uf}')
-            AND zone_group = '{zone_group}'
-            AND zone_code = '{zone}'
+            {zone_filter}
             AND section_code = '{section}'
         """
 

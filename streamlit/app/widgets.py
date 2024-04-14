@@ -206,10 +206,34 @@ def widget_tempo_medio_voto(container, turno, uf, zona, secao):
 
 
 def widget_tabela_tempo_medio_zonas( container, turno, uf, zona, secao ):
-    container.markdown('#### Tempo Médio de Votação por Zona')
-    metrics_df = get_duckdb_connector().get_vote_time_metrics(uf, turno, zona, secao)
-    container.dataframe(metrics_df)
 
+    map_gdf = load_brazil_simplified_map()
+    map_gdf = map_gdf.query(f"SIGLA_UF == '{uf}'")
+
+    # plot a small map with the selected UF
+    fig, ax = plt.subplots( figsize=(1, 1) )
+    map_gdf.plot(ax=ax, color=RED)
+    ax.axis('off')
+    # add the sigla of the UF
+    ax.text(
+        map_gdf.centroid.x.values[0],
+        map_gdf.centroid.y.values[0],
+        uf,
+        fontsize=12,
+        weight='bold',
+        ha='center',
+        va='center',
+        color='white'
+    )
+
+    container.pyplot(fig, use_container_width=False)
+
+    metrics_df = get_duckdb_connector().get_vote_time_metrics(uf, turno, zona, secao)
+    metrics_df = metrics_df[ ['zone_code', 'total_votos', 'tempo_voto_medio'] ]
+
+
+    container.markdown('#### Tempo Médio de Votação por Zona')
+    container.dataframe(metrics_df)
 
 def widget_heatmap_tempo_medio_voto_mapa( container, turno, uf, zona, secao ):
     COLORMAP = 'coolwarm'
