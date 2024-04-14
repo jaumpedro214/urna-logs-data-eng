@@ -20,8 +20,10 @@ class DuckDBConnector:
             DuckDBConnector._instance = DuckDBConnector()
         return DuckDBConnector._instance
     
+    
     def connect(self):
         self.cursor = duckdb.connect()
+
 
     def calculate_zone_group(self, zone):
         if zone == 'ALL':
@@ -32,6 +34,7 @@ class DuckDBConnector:
         for group in ZONE_GROUPS:
             if zone >= group[0] and zone < group[1]:
                 return f"{group[0]}-{group[1]}"
+
 
     def get_vote_time_metrics(self, uf, turno, zone, section):
         table = """

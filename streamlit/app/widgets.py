@@ -18,8 +18,8 @@ from matplotlib.colors import LinearSegmentedColormap
 def get_duckdb_connector():
     return DuckDBConnector.get_instance()
 
-BLUE = "#0B1D51"
-RED  = "#F08902"
+PRIMARY_COLOR    = "#0B1D51"
+HIGHLIGHT_COLOR  = "#F08902"
 
 # Seaborn set theme
 # no grid
@@ -130,7 +130,7 @@ def widget_numero_votos_intervalo_5min(container, turno, uf, zona, secao):
         x=metrics_df['timestamp_voto_computado_5min'],
         y=y_metric,
         ax=ax,
-        color=BLUE
+        color=PRIMARY_COLOR
     )
 
     # Fill area under the line
@@ -141,14 +141,14 @@ def widget_numero_votos_intervalo_5min(container, turno, uf, zona, secao):
         0,
         zorder=0,
         alpha=0.5,
-        color=BLUE
+        color=PRIMARY_COLOR
     )
 
     # Add vertical line at the maximum value
     # --------------------------------------
     ax.axvline(
         x=metrics_df.loc[y_metric.idxmax(), 'timestamp_voto_computado_5min'],
-        color=RED,
+        color=HIGHLIGHT_COLOR,
         ymin=0,
         ymax=1,
         linestyle='-',
@@ -166,7 +166,7 @@ def widget_numero_votos_intervalo_5min(container, turno, uf, zona, secao):
         fontsize=10,
         ha='left',
         va='center',
-        bbox=dict(facecolor=RED, alpha=1)
+        bbox=dict(facecolor=HIGHLIGHT_COLOR, alpha=1)
     )
 
 
@@ -219,7 +219,7 @@ def widget_tabela_tempo_medio_zonas( container, turno, uf, zona, secao ):
 
     # plot a small map with the selected UF
     fig, ax = plt.subplots( figsize=(1, 1) )
-    map_gdf.plot(ax=ax, color=RED)
+    map_gdf.plot(ax=ax, color=HIGHLIGHT_COLOR)
     ax.axis('off')
     # add the sigla of the UF
     ax.text(
@@ -270,7 +270,7 @@ def widget_tabela_tempo_medio_zonas( container, turno, uf, zona, secao ):
             .apply(
                 lambda x: 
                     [
-                        f'background-color: {RED}; color: white; font-weight: bold; font-size: 15px'
+                        f'background-color: {HIGHLIGHT_COLOR}; color: white; font-weight: bold; font-size: 15px'
                         if x['Zona'] in top_3_most_last_zones else '',
                     ]*len(x),
                 axis=1
@@ -332,6 +332,7 @@ def widget_heatmap_tempo_medio_voto_mapa( container, turno, uf, zona, secao ):
     svg_image_with_links = add_ufs_and_links_to_map(svg_image_buffer.getvalue())
 
     container.markdown('#### Tempo Médio de Votação por UF')
+    container.markdown(':point_down: Clique no Mapa para detalhes')
     container.markdown(svg_image_with_links, unsafe_allow_html=True)
 
 
@@ -344,7 +345,7 @@ def widget_bignumber_votos( container, turno, uf, zona, secao ):
         votos = metrics_df['total_votos'].max()
     
     votos_formatado = f"{votos:,}".replace(',', ' ')
-    container.metric(label='Votos', value=votos_formatado)
+    container.metric(label=':white_check_mark: Votos', value=votos_formatado)
 
 
 def widget_bignumber_secoes( container, turno, uf, zona, secao ):
@@ -356,7 +357,7 @@ def widget_bignumber_secoes( container, turno, uf, zona, secao ):
         secoes = metrics_df['total_secoes'].max()
 
     section_formatado = f"{secoes:,}".replace(',', ' ')
-    container.metric(label='Seções', value=section_formatado)
+    container.metric(label=':pushpin: Seções', value=section_formatado)
 
 
 def widget_big_number_tempo_medio( container, turno, uf, zona, secao ):
@@ -368,7 +369,7 @@ def widget_big_number_tempo_medio( container, turno, uf, zona, secao ):
         tempo_medio = metrics_df['tempo_voto_medio'].max()
 
     tempo_medio_formatado = format_time(tempo_medio)
-    container.metric(label='Tempo Médio', value=tempo_medio_formatado)
+    container.metric(label=':stopwatch: Tempo Médio', value=tempo_medio_formatado)
 
 
 def widget_big_number_tempo_medio_bio( container, turno, uf, zona, secao ):
@@ -380,7 +381,7 @@ def widget_big_number_tempo_medio_bio( container, turno, uf, zona, secao ):
         tempo_medio = metrics_df['tempo_biometria_medio'].max()
 
     tempo_medio_formatado = format_time(tempo_medio)
-    container.metric(label='Tempo Médio Biometria', value=tempo_medio_formatado)
+    container.metric(label=':point_up: Tempo Médio Biometria', value=tempo_medio_formatado)
 
 
 def widget_big_number_tempo_total_voto( container, turno, uf, zona, secao ):
@@ -390,9 +391,24 @@ def widget_big_number_tempo_total_voto( container, turno, uf, zona, secao ):
         tempo_medio = metrics_df.query(f"uf == 'ALL'")['tempo_voto_soma'].max()
     else:
         tempo_medio = metrics_df['tempo_voto_soma'].max()
+    
+    tempo_medio_anos = tempo_medio / (365 * 24 * 3600)
+    if tempo_medio_anos < 5:
+        icon = ':baby:'
+    elif tempo_medio_anos < 10:
+        icon = ':boy:'
+    elif tempo_medio_anos < 15:
+        icon = ':child:'
+    elif tempo_medio_anos < 30:
+        icon = ':man:'
+    elif tempo_medio_anos < 60:
+        icon = ':older_adult:'
+    else:
+        icon = ':older_man:'
+    
 
     tempo_medio_formatado = format_time(tempo_medio)
-    container.metric(label='Tempo Total Gasto', value=tempo_medio_formatado)
+    container.metric(label=f'{icon} Tempo Total Gasto', value=tempo_medio_formatado)
 
 
 def widget_qtd_votos_intervalo_tempo( container, turno, uf, zona, secao ):
@@ -451,7 +467,7 @@ def widget_qtd_votos_intervalo_tempo( container, turno, uf, zona, secao ):
         x='valor', 
         y='intervalo', 
         data=df_valores_qtd_votos_intervalo, 
-        color=BLUE,
+        color=PRIMARY_COLOR,
         ax=ax
     )
     fig.gca().invert_yaxis()
@@ -459,7 +475,7 @@ def widget_qtd_votos_intervalo_tempo( container, turno, uf, zona, secao ):
     # make the biggest bar red
     max_value = df_valores_qtd_votos_intervalo['valor'].max()
     max_value_index = df_valores_qtd_votos_intervalo['valor'].idxmax()
-    ax.patches[max_value_index].set_facecolor(RED)
+    ax.patches[max_value_index].set_facecolor(HIGHLIGHT_COLOR)
     # add the % inside the biggest bar
     max_value_percent = max_value / df_valores_qtd_votos_intervalo['valor'].sum()
     ax.text(

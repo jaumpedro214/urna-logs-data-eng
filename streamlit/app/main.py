@@ -15,7 +15,7 @@ UFS = [
 ]
 TURNOS = ['1', '2']
 
-def get_parameters():
+def get_parameters_from_http_query_params():
     query_parameters = st.query_params
     select_parameters = lambda x, default, accepted: (
         default 
@@ -35,16 +35,47 @@ def get_parameters():
 if __name__ == "__main__":
     st.set_page_config(layout="wide")
 
-    uf, turno, zona, secao = get_parameters()
+    uf, turno, zona, secao = get_parameters_from_http_query_params()
     
     st.title(f'Eleições em Números - Tempo de Votação')
-    subtitulo = f'## {turno}º Turno'
+    subtitulo = ''
     subtitulo = subtitulo + f' - {uf}' if uf != 'ALL' else subtitulo
     subtitulo = subtitulo + f' - Zona {zona}' if zona != 'ALL' else subtitulo
     subtitulo = subtitulo + f', Seção {secao}' if secao != 'ALL' else subtitulo
 
-    st.markdown( subtitulo )
-    
+    col_subtitle, col_change_turn = st.columns([4, 1])
+    # col_subtitle.markdown( subtitulo )
+    # add button to change the turn
+
+    outro_turno = '1' if turno == '2' else '2'
+    query_parameters = f"?turno={outro_turno}&uf={uf}&zona={zona}&secao={secao}"
+    st.components.v1.html(
+        f"""
+        <div>
+            <a href="{query_parameters}" class="btn btn-primary" role="button" target="_blank" style="text-decoration: none;">
+                <button 
+                    style="background-color: #F08902; 
+                    color: white; 
+                    padding: 10px 20px; 
+                    font-size: 32px; 
+                    border: none; 
+                    cursor: pointer; 
+                    font-family: sans-serif; 
+                    font-weight: bold;"
+                    height="70px";
+                >
+                {turno}º Turno
+                </button>
+            </a>
+            <p style="font-size: 32px; margin-top: 10px; margin-left: 5px;
+            font-family: sans-serif; font-weight: bold; display: inline-block;">
+                {subtitulo}
+            </p>
+        </div>
+        """,
+        height=70
+    )
+
     # ============================
     # Big Number Widgets
     # ============================
