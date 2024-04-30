@@ -3,7 +3,7 @@
 This repository contains Python + DuckDB scripts for processing logs from [Brazilian Electronic Ballot Boxes](https://international.tse.jus.br/en/electronic-ballot-box/presentation?set_language=en) to compute several time-related metrics (mean vote time, number of votes computed in 5min, percentage of biometric identification success).
 
 ## The Data
-The logs from the voting machines can be directly downloaded from the TSE open data website. This repository contains Python scripts that automatically download and extract the logs.
+The logs from the voting machines can be directly downloaded from the [TSE open data website](https://dadosabertos.tse.jus.br/dataset/resultados-2022-arquivos-transmitidos-para-totalizacao). This repository contains Python scripts that automatically download and extract the logs.
 
 ## What are the logs of the Electronic Ballot Boxes?
 Files that contain all operations performed on the machine, from the initial setup to the end of voting in the second round (if applicable). The files are stored in plain text, with each line representing an event. See an example below:
